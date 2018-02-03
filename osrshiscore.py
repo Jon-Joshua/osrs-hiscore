@@ -63,7 +63,7 @@ class OSRSHiscore:
             cur_skill = skills[x]
             hs_array[cur_skill] = {}
             for y in range(len(titles)):
-                hs_array[cur_skill][titles[y]] = hs_list[x][y]
+                hs_array[cur_skill][titles[y]] = int(hs_list[x][y])
         return hs_array
 
 

@@ -1,10 +1,24 @@
 import requests
+import csv
+
+class HiscoreError(Exception):
+    pass
 
 class OSRSHiscore:
 
+    def __init__(self, user_agent=None):
+        if user_agent != None:
+            self.user_agent = user_agent
+
     user_agent = 'osrs-hiscore'
 
+    # Raise HiscoreError with smol error message.
+    def raise_not_found(self, username):
+        not_found_error_msg = '404 Error: {} not found in hiscore'.format(username)
+        raise HiscoreError(not_found_error_msg)
+
     def get(self, username, hiscore=''):
+        # Change hiscore kwarg to hiscore url appendix.
         hiscore_url = ''
         if hiscore != '':
             if hiscore == 'im':
@@ -24,36 +38,33 @@ class OSRSHiscore:
 
         response = requests.get(url, headers={'User-agent': self.user_agent})
 
+        # If username not found, raise exception.
         if response.status_code == 404:
-            return
+            self.raise_not_found(username)
 
-        parsed = self._parse(response.text)
-        return parsed
+        return self._parse(response.content.decode('utf-8'))
 
     def _parse(self, response):
-        hiscore_array = {}
+        hs_array = {}
 
+        # List of hiscore values in order of apperance in hiscore.
         skills = [
                 'overall', 'attack', 'strength', 'defence', 'hitpoints', 'ranged', 'prayer', 'magic', 'cooking',
                 'woodcutting','fletching', 'fishing', 'firemaking', 'crafting', 'smithing', 'mining', 'herblore',
                 'agility', 'theiving', 'slayer', 'farming', 'runecraft', 'hunter', 'construction'
         ]
 
-        split_resp = response.split('\n')
+        titles = ['rank', 'level', 'experience']
+
+        reader = csv.reader(response.splitlines(), delimiter=',')
+        hs_list = list(reader)
 
         for x in range(len(skills)):
-            skill = split_resp[x].split(',')
             cur_skill = skills[x]
-            rank = skill[0]
-            level = skill[1]
-            experience = skill[2]
-
-            hiscore_array[cur_skill] = {}
-            hiscore_array[cur_skill]['rank'] = rank
-            hiscore_array[cur_skill]['level'] = level
-            hiscore_array[cur_skill]['xp'] = experience
-
-        return hiscore_array
+            hs_array[cur_skill] = {}
+            for y in range(len(titles)):
+                hs_array[cur_skill][titles[y]] = hs_list[x][y]
+        return hs_array
 
 
 
